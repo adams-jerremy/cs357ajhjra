@@ -3,10 +3,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 
 public class Assignment1 {
@@ -14,6 +16,7 @@ public class Assignment1 {
 	static int[] matching;
 	static Map<Integer,ArrayList<Link>> graph;
 	static List<Integer> excess;
+	static Set<Integer> vVisited;
 	
 	public static void main(String[] args) {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -33,6 +36,9 @@ public class Assignment1 {
 	}
 	
 	private static boolean handleLine(String s){
+//		for(int i : graph.keySet()){
+//			System.err.println(i+": "+graph.get(i));
+//		}
 		Scanner sc = new Scanner(s);
 		int source = sc.nextInt(), newLink;
 		if(source<0) return false;
@@ -47,39 +53,58 @@ public class Assignment1 {
 		/* Two cases left:
 		 * U matched in an mwmcm, BFS along tight edges
 		 */
-		List<Integer> list = new ArrayList<Integer>();
-		list.add(source);
-		Pair<Boolean,List<Integer>> p = DFSTight(source, list);
-		if(p.first) invertPath(p.second);
-		else changePhi(p.second);
+		vVisited = new HashSet<Integer>();
+		Pair<Boolean,List<Integer>> p = DFSTight(source, new ArrayList<Integer>(), new boolean[graph.size()][matching.length]);
+		if(p.first){
+			p.second.add(source);
+			invertPath(p.second);
+		}
+		else changePhi();
 		
 		return true;
 	}
 	
 	private static void invertPath(List<Integer> l){ 
-		for(ListIterator<Integer> li = l.listIterator(); li.hasNext();){
-			int u = li.next();
-			int v = li.next();
-			matching[v] = u;
+		//System.err.println("Invert Path: "+l);
+		for(ListIterator<Integer> li = l.listIterator(l.size()); li.hasPrevious();){
+			int v = li.previous();
+			if(!li.hasPrevious()) break;
+			int u = li.previous();
+			matching[u] = v;
 		}
 	}
 	
-	private static void changePhi(List<Integer> l){
-		for(int i = 1;i<l.size();i+=2) ++phi[l.get(i)];
+	private static void changePhi(){
+		//System.err.println("Fix Phi");
+		for(int v:vVisited) ++phi[v];
 	}
 	
-	private static Pair<Boolean,List<Integer>> DFSTight(int start, List<Integer> visited){
+	private static Pair<Boolean,List<Integer>> DFSTight(int start, List<Integer> path, boolean[][] visited){
+		//System.err.println("DFSTighting from u"+start);
 		for(Link l : graph.get(start)) 
-			if (l.tight && visited.get(visited.size()-1) != l.destination){
-				visited.add(l.destination);
-				return DFSMatched(l.destination, visited);
+			if (l.tight && !visited[start][l.destination]){
+				vVisited.add(l.destination);
+				visited[start][l.destination] = true;
+				//System.err.println("Tighting from u"+start+" to v"+l.destination);
+				Pair<Boolean,List<Integer>> p = DFSMatched(l.destination,path, visited); 
+				if(p.first){
+					//System.err.println("Found u' = "+p.second.get(p.second.size()-1)+" found = "+p.first);
+					path.add(l.destination);
+					return p;
+				} 
 			}
-		return new Pair<Boolean, List<Integer>>(new Boolean(false),visited);
+		//System.err.println("DFSTight has no nodes to visit");
+		return new Pair<Boolean, List<Integer>>(new Boolean(false),path);
 	}
-	private static Pair<Boolean,List<Integer>> DFSMatched(int start, List<Integer> visited){
-		visited.add(matching[start]);
-		if(excess.get(matching[start]) == 0) return new Pair<Boolean, List<Integer>>(true,visited);
-		return DFSTight(matching[start],visited);
+	private static Pair<Boolean,List<Integer>> DFSMatched(int start, List<Integer> path, boolean[][] visited){
+		//System.err.println("DFSSMatcheding from v"+start+" to u"+matching[start]);
+		if(excess.get(matching[start]) == 0){
+			path.add(matching[start]);
+			return new Pair<Boolean, List<Integer>>(true,path);
+		}
+		Pair<Boolean,List<Integer>> p = DFSTight(matching[start],path, visited);
+		if(p.first) path.add(start);
+		return p;
 	}
 	
 	
@@ -90,9 +115,17 @@ public class Assignment1 {
 	private static void calculateExcess(int n){
 		int max = Integer.MIN_VALUE, temp;
 		for(Link l : graph.get(n))
-			if((temp = l.weight-phi[l.destination])>max) max = temp; 
+			if((temp = l.weight-phi[l.destination]) >max) max = temp; 
 		excess.set(n, max);
 		for(Link l : graph.get(n)) l.tight = max>=0 && ((l.weight-phi[l.destination]) == max);
+//		if(n == 0){
+//			System.err.println("Excess of 0: "+excess.get(0));
+//			System.err.println("Max of 0: "+max);
+//			for(Link l : graph.get(n)){
+//				System.err.println("0 to "+l.destination);
+//				if(l.tight) System.err.println("Tight from 0 to "+l.destination);
+//			}
+//		}
 	}
 	
 	private static boolean matched(int n){
@@ -105,7 +138,7 @@ public class Assignment1 {
 		if(graph.containsKey(n))
 			for(Link l : graph.get(n))
 				++l.weight;
-		graph.put(n, new ArrayList<Link>());
+		else graph.put(n, new ArrayList<Link>());
 	}
 	
 	private static void init(int n){
@@ -126,13 +159,15 @@ public class Assignment1 {
 		for(int i : matching) sb.append(i).append(' ');
 		sb.append('\n');
 		for(int i : phi) sb.append(i).append(' ');
-		sb.append('\n');
+		//sb.append('\n');
 		System.out.println(sb.toString());
 	}
 	private static class Link{
 		public int destination, weight;
 		public boolean tight;
 		public Link(int d, int w){ destination = d; weight = w; tight=false;}
+		
+		public String toString(){return ""+destination;	}
 
 	}
 	
