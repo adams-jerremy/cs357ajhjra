@@ -4,6 +4,7 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Scanner;
 
@@ -39,17 +40,48 @@ public class Assignment1 {
 		while(sc.hasNextInt()){
 			newLink = sc.nextInt();
 			graph.get(source).add(new Link(newLink, 0)); // update graph
-			if(matched(source)) return true; // case 1 - u matched in M
-			ensureExcessSize();
-			for(int i:graph.keySet()) calculateExcess(i);//Find Excess/tightness
-			/* Two cases left:
-			 * U matched in an mwmcm, BFS along tight edges
-			 * 
-			 */
-			
 		}
+		if(matched(source)) return true; // case 1 - u matched in M
+		ensureExcessSize();
+		for(int i:graph.keySet()) calculateExcess(i);//Find Excess/tightness
+		/* Two cases left:
+		 * U matched in an mwmcm, BFS along tight edges
+		 */
+		List<Integer> list = new ArrayList<Integer>();
+		list.add(source);
+		Pair<Boolean,List<Integer>> p = DFSTight(source, list);
+		if(p.first) invertPath(p.second);
+		else changePhi(p.second);
+		
 		return true;
 	}
+	
+	private static void invertPath(List<Integer> l){ 
+		for(ListIterator<Integer> li = l.listIterator(); li.hasNext();){
+			int u = li.next();
+			int v = li.next();
+			matching[v] = u;
+		}
+	}
+	
+	private static void changePhi(List<Integer> l){
+		for(int i = 1;i<l.size();i+=2) ++phi[l.get(i)];
+	}
+	
+	private static Pair<Boolean,List<Integer>> DFSTight(int start, List<Integer> visited){
+		for(Link l : graph.get(start)) 
+			if (l.tight && visited.get(visited.size()-1) != l.destination){
+				visited.add(l.destination);
+				return DFSMatched(l.destination, visited);
+			}
+		return new Pair<Boolean, List<Integer>>(new Boolean(false),visited);
+	}
+	private static Pair<Boolean,List<Integer>> DFSMatched(int start, List<Integer> visited){
+		visited.add(matching[start]);
+		if(excess.get(matching[start]) == 0) return new Pair<Boolean, List<Integer>>(true,visited);
+		return DFSTight(matching[start],visited);
+	}
+	
 	
 	private static void ensureExcessSize(){
 		while(excess.size()<graph.size()) excess.add(0);
@@ -102,6 +134,12 @@ public class Assignment1 {
 		public boolean tight;
 		public Link(int d, int w){ destination = d; weight = w; tight=false;}
 
+	}
+	
+	static class Pair<T,E>{
+		T first;
+		E second;
+		public Pair(T tt, E ee){first = tt; second = ee;}
 	}
 	
 }
