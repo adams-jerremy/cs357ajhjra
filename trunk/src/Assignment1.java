@@ -93,18 +93,20 @@ public class Assignment1 {
 			if (l.tight && !visited[start][l.destination]){
 				vVisited.add(l.destination);
 				visited[start][l.destination] = true;
-				System.err.println("Tighting from u"+start+" to v"+l.destination);
+				System.err.println("Explore from u"+start+" to v"+l.destination);
+				System.err.println("Explore from v"+l.destination+" to u"+matching[l.destination]);
 				if(excess.get(matching[l.destination]) == 0){
-					System.err.println("Add u' = "+l.destination+" and "+matching[l.destination]);
+					System.err.println("Add u' = "+matching[l.destination]+" and "+l.destination);
 					path.add(matching[l.destination]);
 					path.add(l.destination);
 					return new Pair<Boolean, List<Integer>>(true,path);
 				}
+				
 				Pair<Boolean,List<Integer>> p = DFSTight(matching[l.destination],path, visited);
 				if(p.first){
-					System.err.println("Add u"+start+" and "+l.destination+" to path");
-					path.add(start);
-					path.add(l.destination);
+					System.err.println("Add u"+matching[l.destination]+" and "+l.destination+" to path");
+					p.second.add(matching[l.destination]);
+					p.second.add(l.destination);
 					return p;
 				}
 			}
