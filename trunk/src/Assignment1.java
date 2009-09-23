@@ -18,7 +18,7 @@ public class Assignment1 {
 	static List<Integer> excess;
 	static Set<Integer> vVisited;
 	
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	
 	private static void d(String s){
 		if(DEBUG) System.err.println(s);
@@ -98,9 +98,9 @@ public class Assignment1 {
 	private static Pair<Boolean,List<Integer>> DFSTight(int start, List<Integer> path, boolean[][] visited){
 		d("DFSTighting from u"+start);
 		for(Link l : graph.get(start)) 
-			if (l.tight && !visited[start][l.destination]){
+			if (l.tight && !visited[start][l.destination] && !visited[matching[l.destination]][l.destination] ){
 				vVisited.add(l.destination);
-				visited[start][l.destination] = true;
+				visited[start][l.destination] = visited[matching[l.destination]][l.destination] = true;
 				d("Explore from u"+start+" to v"+l.destination+" to u"+matching[l.destination]);
 				if(excess.get(matching[l.destination]) == 0){
 					d("Add u' = "+matching[l.destination]+" and v"+l.destination);
@@ -121,35 +121,6 @@ public class Assignment1 {
 		return new Pair<Boolean, List<Integer>>(new Boolean(false),path);
 	}
 	
-	/*
-	private static Pair<Boolean,List<Integer>> DFSTight(int start, List<Integer> path, boolean[][] visited){
-		//System.err.println("DFSTighting from u"+start);
-		for(Link l : graph.get(start)) 
-			if (l.tight && !visited[start][l.destination]){
-				vVisited.add(l.destination);
-				visited[start][l.destination] = true;
-				//System.err.println("Tighting from u"+start+" to v"+l.destination);
-				Pair<Boolean,List<Integer>> p = DFSMatched(l.destination,path, visited); 
-				if(p.first){
-					//System.err.println("Found u' = "+p.second.get(p.second.size()-1)+" found = "+p.first);
-					path.add(l.destination);
-					return p;
-				} 
-			}
-		//System.err.println("DFSTight has no nodes to visit");
-		return new Pair<Boolean, List<Integer>>(new Boolean(false),path);
-	}
-	private static Pair<Boolean,List<Integer>> DFSMatched(int start, List<Integer> path, boolean[][] visited){
-		//System.err.println("DFSSMatcheding from v"+start+" to u"+matching[start]);
-		if(excess.get(matching[start]) == 0){
-			path.add(matching[start]);
-			return new Pair<Boolean, List<Integer>>(true,path);
-		}
-		Pair<Boolean,List<Integer>> p = DFSTight(matching[start],path, visited);
-		if(p.first) path.add(start);
-		return p;
-	}*/
-	
 	
 	private static void ensureExcessSize(){
 		while(excess.size()<graph.size()) excess.add(0);
@@ -161,14 +132,9 @@ public class Assignment1 {
 			if((temp = l.weight-phi[l.destination]) >max) max = temp; 
 		excess.set(n, max);
 		for(Link l : graph.get(n)) l.tight = ( max>=0 && ((l.weight-phi[l.destination]) == max));
-//		if(n == 0){
-//			System.err.println("Excess of 0: "+excess.get(0));
-//			System.err.println("Max of 0: "+max);
-//			for(Link l : graph.get(n)){
-//				System.err.println("0 to "+l.destination);
-//				if(l.tight) System.err.println("Tight from 0 to "+l.destination);
-//			}
-//		}
+		
+		
+			
 	}
 	
 	private static boolean matched(int n){
