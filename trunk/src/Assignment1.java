@@ -12,17 +12,14 @@ import java.util.Set;
 
 
 public class Assignment1 {
+	private static final boolean DEBUG = false;
+	private static void d(String s){ if(DEBUG) System.err.println(s);}
+	
 	static int[] phi;
 	static int[] matching;
 	static Map<Integer,ArrayList<Link>> graph;
 	static List<Integer> excess;
 	static Set<Integer> vVisited;
-	
-	private static final boolean DEBUG = false;
-	
-	private static void d(String s){
-		if(DEBUG) System.err.println(s);
-	}
 	
 	public static void main(String[] args) {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -42,8 +39,7 @@ public class Assignment1 {
 					print();
 				}
 				n = Integer.parseInt(br.readLine());
-			}
-			
+			}		
 		}catch(IOException e){e.printStackTrace();}
 	}
 	
@@ -52,14 +48,11 @@ public class Assignment1 {
 		for(int i : graph.keySet()) d(i+": "+graph.get(i));
 		
 		Scanner sc = new Scanner(s);
-		int source = sc.nextInt(), newLink;
+		int source = sc.nextInt();
 		d(" source: "+source);
 		if(source<0) return false;
 		handleSource(source); //Add Node/Increment weights
-		while(sc.hasNextInt()){
-			newLink = sc.nextInt();
-			graph.get(source).add(new Link(newLink, 0)); // update graph
-		}
+		while(sc.hasNextInt()) addEdge(source,sc.nextInt());//graph.get(source).add(new Link(sc.nextInt(), 0)); // update graph
 		if(matched(source)) return true; // case 1 - u matched in M, return same matching, same phi
 		ensureExcessSize(); //make sure that our excess list is large enough
 		for(int i:graph.keySet()) calculateExcess(i);//find Excess/tightness
@@ -70,9 +63,10 @@ public class Assignment1 {
 		d("Ret path: "+p.second);
 		if(p.first) invertPath(p.second); // if DFS found u' swap tight/matched edges
 		else changePhi(); //if no u' found, increment phis of visited v nodes.
-		
 		return true;
 	}
+	
+	private static void addEdge(int source, int dest){ graph.get(source).add(new Link(dest, 0)); }
 	
 	private static void invertPath(List<Integer> l){ 
 		d("Invert Path: "+l);
@@ -163,6 +157,7 @@ public class Assignment1 {
 		for(int i : phi) sb.append(i).append(' ');
 		System.out.println(sb.toString());
 	}
+	
 	
 	private static class Link{
 		public int destination, weight;
