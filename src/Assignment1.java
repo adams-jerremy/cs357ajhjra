@@ -121,32 +121,25 @@ public class Assignment1 {
 		return new Pair<Boolean, List<Integer>>(new Boolean(false),path);
 	}
 	
-	
 	private static void ensureExcessSize(){
 		while(excess.size()<graph.size()) excess.add(0);
 	}
 	
 	private static void calculateExcess(int n){
 		int max = Integer.MIN_VALUE, temp;
-		for(Link l : graph.get(n))
-			if((temp = l.weight-phi[l.destination]) >max) max = temp; 
+		for(Link l : graph.get(n)) if((temp = l.weight-phi[l.destination]) >max) max = temp; 
 		excess.set(n, max);
 		for(Link l : graph.get(n)) l.tight = ( max>=0 && ((l.weight-phi[l.destination]) == max));
-		
-		
-			
 	}
 	
 	private static boolean matched(int n){
-		for(int i : matching)
-			if( i == n) return true;
+		for(int i : matching) if(i == n) return true;
 		return false;
 	}
 	
 	private static void handleSource(int n){
 		if(graph.containsKey(n))
-			for(Link l : graph.get(n))
-				++l.weight;
+			for(Link l : graph.get(n)) ++l.weight;
 		else graph.put(n, new ArrayList<Link>());
 	}
 	
@@ -170,13 +163,14 @@ public class Assignment1 {
 		for(int i : phi) sb.append(i).append(' ');
 		System.out.println(sb.toString());
 	}
+	
 	private static class Link{
 		public int destination, weight;
 		public boolean tight;
 		public Link(int d, int w){ destination = d; weight = w; tight=false;}
 		public String toString(){return ""+destination;	}
-
 	}
+	
 	static class Pair<T,E>{
 		T first;
 		E second;
