@@ -1,0 +1,3 @@
+#!/bin/sh
+/lusr/bin/javac Assignment1.java
+/lusr/bin/java Assignment1 < $1 > $2

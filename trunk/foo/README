@@ -1,0 +1,28 @@
+
+**********
+Authors:
+**********
+Jerremy Adams
+adams.jerremy@gmail.com
+
+Amelia Harrison
+amelia.j.harrison@gmail.com
+
+**********
+Compilation Instructions:
+**********
+The script go includes a call to javac - no compilation is necessary.  
+
+**********
+Running instructions:
+**********
+Invoke ./go <input file> <output file>  in the same directory as the Assignment1.java file.  
+
+Go assumes that javac and java are both located in /lusr/bin/ 
+
+This is true for the CS linux machines, however if running elsewhere, please change the two lines in go to rectify the change. 
+
+**********
+Description:
+**********
+No known bugs or limitations.  The program passed all 15 sample inputs provided by the instructor.  
