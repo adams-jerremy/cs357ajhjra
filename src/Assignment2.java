@@ -12,7 +12,7 @@ import java.util.Set;
 
 
 public class Assignment2 {
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = true;
 	private static void d(String s){ if(DEBUG) System.err.println(s);}
 	
 	static int[] phi;
@@ -70,7 +70,13 @@ public class Assignment2 {
 		for(int i:graph.keySet()) calculateExcess(i);//find Excess/tightness
 		
 		buildDigraph();//building auxiliary directed graph
+		printDigraph();
 		Map<Integer, Pair<Integer,Integer>> distances = SSSP(SOURCE);
+		
+		printPath(distances);
+		printDistances(distances);
+		
+		d("size of distances: "+distances.size()+"");
 		
 		changePhi(distances);
 		
@@ -83,14 +89,38 @@ public class Assignment2 {
 	private static int SOURCE = -1;
 	private static int SINK = -2;
 	
+	private static void printDigraph(){
+		System.err.println("DIGRAPH:");
+		for(int i : digraph.keySet()){
+			System.err.println(i+": "+digraph.get(i));
+		}
+	}
+	
+	private static void printDistances(Map<Integer, Pair<Integer,Integer>> distances){
+		for(int i : distances.keySet()){
+			System.err.println("Distance to: "+i+" = "+distances.get(i).first+" from "+distances.get(i).second);
+		}
+		
+	}
+	
+	private static void printPath(Map<Integer, Pair<Integer,Integer>> distances){
+		System.err.println("SSSP:");
+		int curr = SINK;
+		while( curr != SOURCE){
+			System.err.print(curr+"("+distances.get(curr).first+") ");
+			curr = distances.get(curr).second;
+		}
+		System.err.println(SOURCE+"("+distances.get(curr).first+") ");
+	}
+	
 	private static void buildDigraph(){
 		
 		digraph = new HashMap<Integer,ArrayList<Link>>();
 		digraph.put(SOURCE, new ArrayList<Link>());//source
 		digraph.put(SINK, new ArrayList<Link>());//sink
-		for(int i = 0;i<matching.length;++i){
+		for(int i = 0;i<matching.length;++i){//keys correspond to v nodes, e.g. if (1, 2) = (u, v) in last M, the supernode for this edge will be called 2
 			digraph.put(i, new ArrayList<Link>());
-			digraph.get(i).add(new Link(SINK,excess.get(matching[i])));
+			digraph.get(i).add(new Link(SINK,excess.get(matching[i])));//every supernode has edge to sink with w = w(u) - phi(v) 
 		}
 		
 		int v;
@@ -98,10 +128,11 @@ public class Assignment2 {
 			if((v=matched(u))!=-1) 
 				for(Link l:graph.get(u))
 					if(l.destination != v &&l.weight>=phi[l.destination])
-						digraph.get(matching[u]).add(new Link(l.destination,excess.get(u)-(l.weight-phi[l.destination])));
+						digraph.get(v).add(new Link(l.destination,excess.get(u)-(l.weight-phi[l.destination])));
 		
 		for(Link l:graph.get(U))
 			if(l.weight>=phi[l.destination]) digraph.get(SOURCE).add(new Link(l.destination,excess.get(U)-(l.weight-phi[l.destination])));
+		digraph.get(SOURCE).add(new Link(SINK,excess.get(U)));
 	}
 	
 	private static Map<Integer, Pair<Integer,Integer>> SSSP(Integer start){
@@ -118,11 +149,11 @@ public class Assignment2 {
 		
 		while(! Y.isEmpty()){
 			int min = Integer.MAX_VALUE;
-			int argmin = -1;
+			int argmin = Integer.MIN_VALUE;
 			for( int y : Y.keySet()){
 				for( int x : X.keySet()){
 					for( Link l : digraph.get(x)){
-						if( (X.get(x).first + l.weight) <  Y.get(Y).first){
+						if(l.destination == y && (X.get(x).first + l.weight) <  Y.get(y).first){
 							Y.put(y, new Pair<Integer, Integer>((X.get(x).first + l.weight), x));
 						}
 					}
@@ -133,10 +164,13 @@ public class Assignment2 {
 					min = Y.get(i).first;
 					argmin = i;
 				}
+				
 			}
-
-			X.put(argmin, Y.get(argmin) );
-			Y.remove(argmin);
+			System.out.println("min: " + min + ", argmin: " + argmin);
+			if(argmin != Integer.MIN_VALUE){
+				X.put(argmin, Y.get(argmin) );
+				Y.remove(argmin);
+			}
 			
 		}
 		
@@ -155,16 +189,23 @@ public class Assignment2 {
 	private static void changePhi(Map<Integer, Pair<Integer,Integer>> distances){
 		d("Fix Phi");
 		int d = distances.get(SINK).first; //this is the distance of shortest path from source to sink
-		for (int v : phi){
-			int dSubI = distances.get(v).first;
+		for (int i = 0;i<phi.length; ++i){
+			int dSubI = distances.get(i).first;
 			dSubI = Math.max(0, (d - dSubI));
-			phi[v] = phi[v] + dSubI;
+			phi[i]+=dSubI;
 		}
 	}
 	
 	private static void updateMatching(Map<Integer, Pair<Integer,Integer>> distances){
-		
-		if(distances.get(SINK).second != SOURCE){
+		int child = distances.get(SINK).second, parent;
+		if(child != SOURCE){
+			parent = distances.get(child).second;
+			while(parent != SOURCE){
+				matching[child] = matching[parent];
+				child = parent;
+				parent = distances.get(child).second;
+			}
+			matching[child] = U;
 			
 		}
 		
