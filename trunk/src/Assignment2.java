@@ -12,7 +12,7 @@ import java.util.Set;
 
 
 public class Assignment2 {
-	private static final boolean DEBUG = true;
+	private static final boolean DEBUG = false;
 	private static void d(String s){ if(DEBUG) System.err.println(s);}
 	
 	static int[] phi;
@@ -90,27 +90,27 @@ public class Assignment2 {
 	private static int SINK = -2;
 	
 	private static void printDigraph(){
-		System.err.println("DIGRAPH:");
+		d("DIGRAPH:");
 		for(int i : digraph.keySet()){
-			System.err.println(i+": "+digraph.get(i));
+			d(i+": "+digraph.get(i));
 		}
 	}
 	
 	private static void printDistances(Map<Integer, Pair<Integer,Integer>> distances){
 		for(int i : distances.keySet()){
-			System.err.println("Distance to: "+i+" = "+distances.get(i).first+" from "+distances.get(i).second);
+			d("Distance to: "+i+" = "+distances.get(i).first+" from "+distances.get(i).second);
 		}
 		
 	}
 	
 	private static void printPath(Map<Integer, Pair<Integer,Integer>> distances){
-		System.err.println("SSSP:");
+		d("SSSP:");
 		int curr = SINK;
 		while( curr != SOURCE){
-			System.err.print(curr+"("+distances.get(curr).first+") ");
+			d(curr+"("+distances.get(curr).first+") ");
 			curr = distances.get(curr).second;
 		}
-		System.err.println(SOURCE+"("+distances.get(curr).first+") ");
+		d(SOURCE+"("+distances.get(curr).first+") ");
 	}
 	
 	private static void buildDigraph(){
@@ -160,16 +160,24 @@ public class Assignment2 {
 				}
 			}
 			for (int i : Y.keySet()){
-				if( Y.get(i).first < min ){
+				if( Y.get(i).first <= min ){
 					min = Y.get(i).first;
 					argmin = i;
 				}
 				
 			}
-			System.out.println("min: " + min + ", argmin: " + argmin);
 			if(argmin != Integer.MIN_VALUE){
 				X.put(argmin, Y.get(argmin) );
 				Y.remove(argmin);
+				d("moving " + argmin + " with d value = " + min + " to X");
+				d("The set X: ");
+				for (int x : X.keySet()){
+					d(x+"");
+				}
+				d("The set Y: ");
+				for (int y : Y.keySet()){
+					d(y+"");
+				}
 			}
 			
 		}
@@ -300,7 +308,7 @@ public class Assignment2 {
 	private static void print(){
 		
 		for(int i : graph.keySet()){
-			System.err.println(i+": "+graph.get(i));
+			d(i+": "+graph.get(i));
 		}
 		StringBuilder sb = new StringBuilder();
 		for(int i : matching) sb.append(i).append(' ');
