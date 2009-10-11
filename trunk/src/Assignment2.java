@@ -17,12 +17,12 @@ public class Assignment2 {
 	
 	static int[] phi;
 	static int[] matching;
-	static int[] supernodes;//0- not a supernode, 1 - a supernode, 2- sink, 3 - source
 	static Map<Integer,ArrayList<Link>> graph;
 	static Map<Integer,ArrayList<Link>> digraph;
 	static List<Integer> excess;
-	static Set<Integer> vVisited;
+	//static Set<Integer> vVisited;
 	static int U = 0;
+	static int[] path;
 	
 	public static void main(String[] args) {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
@@ -69,13 +69,20 @@ public class Assignment2 {
 		ensureExcessSize();
 		for(int i:graph.keySet()) calculateExcess(i);//find Excess/tightness
 		
-		buildDigraph();//building auxilary directed graph
+		buildDigraph();//building auxiliary directed graph
+		Map<Integer, Pair<Integer,Integer>> distances = SSSP(SOURCE);
+		
+		changePhi(distances);
+		
+		updateMatching(distances);
 		
 
 		return true;
 	}
+	
 	private static int SOURCE = -1;
 	private static int SINK = -2;
+	
 	private static void buildDigraph(){
 		
 		digraph = new HashMap<Integer,ArrayList<Link>>();
@@ -95,10 +102,47 @@ public class Assignment2 {
 		
 		for(Link l:graph.get(U))
 			if(l.weight>=phi[l.destination]) digraph.get(SOURCE).add(new Link(l.destination,excess.get(U)-(l.weight-phi[l.destination])));
-		
-
-		
 	}
+	
+	private static Map<Integer, Pair<Integer,Integer>> SSSP(Integer start){
+		
+		Map<Integer, Pair<Integer,Integer>> X = new HashMap<Integer,  Pair<Integer,Integer>>();
+		Map<Integer, Pair<Integer,Integer>> Y = new HashMap<Integer,  Pair<Integer,Integer>>();
+		X.put(start, new Pair<Integer, Integer>(0, Integer.MIN_VALUE));
+		
+		for( int u : digraph.keySet()){	
+			if (u != start){
+				Y.put(u,new Pair<Integer, Integer>(Integer.MAX_VALUE, Integer.MIN_VALUE));
+			}
+		}
+		
+		while(! Y.isEmpty()){
+			int min = Integer.MAX_VALUE;
+			int argmin = -1;
+			for( int y : Y.keySet()){
+				for( int x : X.keySet()){
+					for( Link l : digraph.get(x)){
+						if( (X.get(x).first + l.weight) <  Y.get(Y).first){
+							Y.put(y, new Pair<Integer, Integer>((X.get(x).first + l.weight), x));
+						}
+					}
+				}
+			}
+			for (int i : Y.keySet()){
+				if( Y.get(i).first < min ){
+					min = Y.get(i).first;
+					argmin = i;
+				}
+			}
+
+			X.put(argmin, Y.get(argmin) );
+			Y.remove(argmin);
+			
+		}
+		
+		return X;
+	}
+	
 	
 	private static boolean weightsLTPhi(int n){
 		for(Link l : graph.get(n)) {
@@ -106,6 +150,24 @@ public class Assignment2 {
 				return false;	
 		}
 		return true;
+	}
+	
+	private static void changePhi(Map<Integer, Pair<Integer,Integer>> distances){
+		d("Fix Phi");
+		int d = distances.get(SINK).first; //this is the distance of shortest path from source to sink
+		for (int v : phi){
+			int dSubI = distances.get(v).first;
+			dSubI = Math.max(0, (d - dSubI));
+			phi[v] = phi[v] + dSubI;
+		}
+	}
+	
+	private static void updateMatching(Map<Integer, Pair<Integer,Integer>> distances){
+		
+		if(distances.get(SINK).second != SOURCE){
+			
+		}
+		
 	}
 	
 	private static void addEdge(int source, int dest, int weight){ graph.get(source).add(new Link(dest, weight)); }
@@ -125,12 +187,9 @@ public class Assignment2 {
 		}
 	}
 	
-	private static void changePhi(){
-		d("Fix Phi");
-		for(int v:vVisited) ++phi[v];
-	}
+
 	
-	private static Pair<Boolean, List<Integer>> DFS(int start){
+/*	private static Pair<Boolean, List<Integer>> DFS(int start){
 		Pair<Boolean,List<Integer>> p = DFSTight(start, new ArrayList<Integer>(), new boolean[graph.size()][matching.length]); //Do depth first search
 		p.second.add(start);
 		return p;
@@ -160,7 +219,7 @@ public class Assignment2 {
 			}
 		d("DFSTight has no nodes to visit");
 		return new Pair<Boolean, List<Integer>>(new Boolean(false),path);
-	}
+	}*/
 	
 	private static void ensureExcessSize(){
 		while(excess.size()<graph.size()) excess.add(0);
