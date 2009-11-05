@@ -76,14 +76,14 @@ public class Assignment2Final {
 						if(auxilary.get(u1).first!=-1 && auxilary.get(u1).first!=auxilary.get(i).first ){
 							for(Link il : graph.get(i)){
 								if(il.destination == auxilary.get(u1).first  ){
-									
+									//check w- phi = w - phi, if so add
 								}
 							}
 						}
 					}
 					break;
 				}
-			}
+			}//aux graph built, do update
 			
 			
 		}
