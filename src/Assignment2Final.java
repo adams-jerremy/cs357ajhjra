@@ -40,11 +40,56 @@ public class Assignment2Final {
 					d("Reading line "+ ++line);
 					if(!handleLine(br.readLine())) break;
 					print();
-					++U;
 				}
 				n = Integer.parseInt(br.readLine());
 			}		
 		}catch(IOException e){e.printStackTrace();}
+	}
+	
+	private enum Type{one,two}
+	
+	private static boolean remove(int u){
+		if(u<0) return false;
+		graph.remove(u);
+		if(matched(u)!=-1){
+			Map<Integer, Pair<Integer,List<Link>>> auxilary = new HashMap<Integer, Pair<Integer,List<Link>>>(graph.size());
+			for(int i:graph.keySet()){
+				int matched = matched(i);
+				if(matched == -1) Link dummy = new Link(-1,0);
+				for(Link l : graph.get(i)){
+					if(l.destination == matched){
+						Pair<Integer,List<Link>> p = new Pair<Integer,List<Link>>(matched(i),new ArrayList<Link>());
+						auxilary.put(i, p);
+						break;
+					}
+				}
+			}
+			for(int i:auxilary.keySet()){
+				switch(auxilary.get(i).first){
+				case -1:
+					for(Link l:graph.get(i))
+						if(l.weight == phi[l.destination])
+							auxilary.get(i).second.add(new Link(matching[l.destination],0));
+					break;
+				default:
+					for(int u1:graph.keySet()){
+						if(auxilary.get(u1).first!=-1 && auxilary.get(u1).first!=auxilary.get(i).first ){
+							for(Link il : graph.get(i)){
+								if(il.destination == auxilary.get(u1).first  ){
+									
+								}
+							}
+						}
+					}
+					break;
+				}
+			}
+			
+			
+		}
+		// update phi
+		
+		return true;
 	}
 	
 	private static boolean handleLine(String s){
@@ -56,10 +101,15 @@ public class Assignment2Final {
 //		d(" source: "+source);
 //		if(source<0) return false;
 		graph.put(U, new ArrayList<Link>());//handleSource(U); //Add Node
-		int destination;
+		int destination = sc.nextInt();
+		if(sc.hasNext())
+			addEdge(U,destination, sc.nextInt());
+		else
+			return remove(destination);
+		
 		while(sc.hasNextInt()){
 			destination = sc.nextInt();
-			if(destination<0) return false;
+			//if(destination<0) return false;
 			addEdge(U,destination, sc.nextInt());//graph.get(source).add(new Link(sc.nextInt(), 0)); // update graph
 		}
 
@@ -85,6 +135,7 @@ public class Assignment2Final {
 		changePhi();
 		updateMatching();
 		d("done");
+		++U;
 		return true;
 	}
 	
@@ -238,6 +289,7 @@ public class Assignment2Final {
 	static class Pair<T,E>{
 		T first;
 		E second;
+		public Pair(){first = null;second = null;}
 		public Pair(T tt, E ee){first = tt; second = ee;}
 	}
 	
