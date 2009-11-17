@@ -4,9 +4,12 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Scanner;
 
 
@@ -54,42 +57,79 @@ public class Assignment2Final {
 		if(matched(u)!=-1){
 			Map<Integer, Pair<Integer,List<Link>>> auxilary = new HashMap<Integer, Pair<Integer,List<Link>>>(graph.size());
 			for(int i:graph.keySet()){
-				int matched = matched(i);
-				if(matched == -1) Link dummy = new Link(-1,0);
-				for(Link l : graph.get(i)){
-					if(l.destination == matched){
-						Pair<Integer,List<Link>> p = new Pair<Integer,List<Link>>(matched(i),new ArrayList<Link>());
-						auxilary.put(i, p);
-						break;
-					}
-				}
+				Pair<Integer,List<Link>> p = new Pair<Integer,List<Link>>(matched(i),new ArrayList<Link>());
+				auxilary.put(i,p);
+//				
+//				for(Link l : graph.get(i)){
+//					if(l.destination == matched){
+//						Pair<Integer,List<Link>> p = new Pair<Integer,List<Link>>(matched,new ArrayList<Link>());
+//						auxilary.put(i, p);
+//						break;
+//					}
+//				}
 			}
 			for(int i:auxilary.keySet()){
 				switch(auxilary.get(i).first){
-				case -1:
+				case -1: // type one
 					for(Link l:graph.get(i))
 						if(l.weight == phi[l.destination])
 							auxilary.get(i).second.add(new Link(matching[l.destination],0));
 					break;
-				default:
-					for(int u1:graph.keySet()){
-						if(auxilary.get(u1).first!=-1 && auxilary.get(u1).first!=auxilary.get(i).first ){
-							for(Link il : graph.get(i)){
-								if(il.destination == auxilary.get(u1).first  ){
-									//check w- phi = w - phi, if so add
-								}
-							}
+				default: // type two
+					int u0v0=0;
+					for(Link l:graph.get(i))
+						if(l.destination==auxilary.get(i).first){
+							u0v0 = l.weight;
+							break;
 						}
-					}
+					for(Link l:graph.get(i))
+						if(l.destination!=auxilary.get(i).first && u0v0-phi[auxilary.get(i).first] == l.weight - phi[l.destination])
+								auxilary.get(i).second.add(new Link(matching[l.destination],0));
 					break;
 				}
 			}//aux graph built, do update
-			
-			
+			List<Integer> path = BFSToType2(auxilary,u);
+			ListIterator<Integer> li = path.listIterator(path.size()-1);
+			int curr = li.previous();
+			while(li.hasPrevious()){
+				int next = li.previous();
+				matching[matched(next)]=curr;
+				curr = next;
+			}
 		}
-		// update phi
+		// update phi :(
 		
 		return true;
+	}
+	
+	private static List<Integer> BFSToType2(Map<Integer, Pair<Integer,List<Link>>> g,int u){
+		Queue<Integer> q = new LinkedList<Integer>();
+		List<Integer> p = new LinkedList<Integer>();
+		Map<Integer,Integer> parent = new HashMap<Integer,Integer>();
+		for(int i:g.keySet()){
+			if(g.get(i).first==-1){//type one
+				q.add(i);
+				parent.put(i, -1);
+				while(!q.isEmpty()){
+					int front = q.poll();
+					if(front == u){
+						int nextParent = front;
+						while(nextParent!=-1){
+							p.add(nextParent);
+							nextParent = parent.get(nextParent);
+						}
+						return p;
+					}
+					for(Link l:g.get(front).second){
+						if(g.get(l.destination).first!=-1){//only look at type 2
+							parent.put(l.destination, front);
+							q.add(l.destination);
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 	
 	private static boolean handleLine(String s){
