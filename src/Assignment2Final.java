@@ -14,7 +14,7 @@ import java.util.Scanner;
 
 
 public class Assignment2Final {
-	private static final boolean DEBUG = false;
+	private static final boolean DEBUG = true;
 	private static void d(String s){ if(DEBUG) System.err.println(s);}
 	
 	static int[] phi;
@@ -53,20 +53,14 @@ public class Assignment2Final {
 	
 	private static boolean remove(int u){
 		if(u<0) return false;
-		graph.remove(u);
+		d("Remove Called");
+
 		if(matched(u)!=-1){
 			Map<Integer, Pair<Integer,List<Link>>> auxilary = new HashMap<Integer, Pair<Integer,List<Link>>>(graph.size());
 			for(int i:graph.keySet()){
 				Pair<Integer,List<Link>> p = new Pair<Integer,List<Link>>(matched(i),new ArrayList<Link>());
 				auxilary.put(i,p);
-//				
-//				for(Link l : graph.get(i)){
-//					if(l.destination == matched){
-//						Pair<Integer,List<Link>> p = new Pair<Integer,List<Link>>(matched,new ArrayList<Link>());
-//						auxilary.put(i, p);
-//						break;
-//					}
-//				}
+
 			}
 			for(int i:auxilary.keySet()){
 				switch(auxilary.get(i).first){
@@ -97,10 +91,75 @@ public class Assignment2Final {
 				curr = next;
 			}
 		}
+		graph.remove(u);
 		// update phi :(
+		//build auxilary digraph
+		Map<Integer, List<Link>> phigraph = new HashMap<Integer, List<Link>>();
+		//adding supernodes, supernode with label s is the source supernode, all other supernodes labeled u,v
+		phigraph.put(SOURCE, new ArrayList<Link>());
+		
+		for(int i = 0;i<matching.length;++i)
+			phigraph.put(i, new ArrayList<Link>());
+		
+		Map<Integer,Integer> maxWeights = new HashMap<Integer,Integer>();//v0,weight
+		
+		for(int i:graph.keySet()){
+			if(matched(i)==-1){
+				for(Link l:graph.get(i)){
+					if(maxWeights.get(l.destination) == null || maxWeights.get(l.destination) < l.weight )
+						maxWeights.put(l.destination, l.weight);
+				}
+			}
+		}
+		//from Source Supernode 
+		for(int v:maxWeights.keySet()){
+			phigraph.get(SOURCE).add(new Link(v,phi[v]-maxWeights.get(v)));
+		}
+		int matched = 0;
+		//Between v supernodes
+		for(int i : graph.keySet()){
+			matched = matched(i);
+			if( matched != -1){
+				int u0v0 = 0;
+				for(Link l: graph.get(i)){
+					if(l.destination==matched){
+						u0v0 = l.weight;
+					}
+				}
+				for(Link l : graph.get(i)){
+					if( l.destination != matched){
+						phigraph.get(matched).add(new Link(l.destination, (u0v0 - phi[matched]) - (l.weight - phi[l.destination]) ));
+					}
+				}
+			}
+		}
+		
+		int[] phiDistance = new int[phi.length]; 
+		System.arraycopy(phi, 0, phiDistance, 0, phi.length);
+		
+		//do djikstra on auxilary, set phi[v] = max(O, phi[v]-distanceTo(v))
+		
+		PriorityQueue<Pair<Integer,Integer>> q = new PriorityQueue<Pair<Integer,Integer>>(matching.length+2,new Comparator<Pair<Integer,Integer>>(){
+			public int compare(Pair<Integer, Integer> o1, Pair<Integer, Integer> o2){return o1.second-o2.second;}});
+		q.add(new Pair<Integer,Integer>(SOURCE,0));
+		
+		Pair<Integer,Integer> cur;//first = node, second = weight
+		while(!q.isEmpty()){
+			cur = q.poll();
+			for(Link l:phigraph.get(cur.first)){
+				Pair<Integer,Integer> n = new Pair<Integer,Integer>(l.destination,cur.second+l.weight);
+				q.add(n);
+				if(n.second<phiDistance[n.first]) phiDistance[n.first] = n.second;
+			}
+		}
+		
+		for(int i =0;i<phi.length;++i)
+			phi[i] = Math.max(0,phi[i]-phiDistance[i]);
 		
 		return true;
 	}
+	
+	
 	
 	private static List<Integer> BFSToType2(Map<Integer, Pair<Integer,List<Link>>> g,int u){
 		Queue<Integer> q = new LinkedList<Integer>();
@@ -326,11 +385,13 @@ public class Assignment2Final {
 		public boolean equals(Object o){ if(o instanceof Link) return destination == ((Link)o).destination; return false;}
 	}
 	
+	
 	static class Pair<T,E>{
 		T first;
 		E second;
 		public Pair(){first = null;second = null;}
 		public Pair(T tt, E ee){first = tt; second = ee;}
+		
 	}
 	
 }
