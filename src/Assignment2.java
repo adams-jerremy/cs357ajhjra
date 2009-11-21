@@ -2,13 +2,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.Scanner;
-import java.util.Set;
 
 
 public class Assignment2 {
@@ -71,18 +70,21 @@ public class Assignment2 {
 		
 		buildDigraph();//building auxiliary directed graph
 		printDigraph();
-		Map<Integer, Pair<Integer,Integer>> distances = SSSP(SOURCE);
+//		Map<Integer, Pair<Integer,Integer>> distances = SSSP(SOURCE);
+//		printPath(distances);
+//		printDistances(distances);
+//		d("size of distances: "+distances.size()+"");
+		djikstra();
 		
-		printPath(distances);
-		printDistances(distances);
-		
-		d("size of distances: "+distances.size()+"");
-		
-		changePhi(distances);
-		
-		updateMatching(distances);
-		
-
+//		changePhi(distances);
+//		updateMatching(distances);
+		d("Dist:");
+		for(int i:dist.keySet())d(i+":"+dist.get(i));
+		d("Parents:");
+		for(int i:parents.keySet()) d(i+":"+parents.get(i));
+		changePhi();
+		updateMatching();
+		d("done");
 		return true;
 	}
 	
@@ -91,27 +93,9 @@ public class Assignment2 {
 	
 	private static void printDigraph(){
 		d("DIGRAPH:");
-		for(int i : digraph.keySet()){
-			d(i+": "+digraph.get(i));
-		}
+		for(int i : digraph.keySet()) d(i+": "+digraph.get(i));
 	}
 	
-	private static void printDistances(Map<Integer, Pair<Integer,Integer>> distances){
-		for(int i : distances.keySet()){
-			d("Distance to: "+i+" = "+distances.get(i).first+" from "+distances.get(i).second);
-		}
-		
-	}
-	
-	private static void printPath(Map<Integer, Pair<Integer,Integer>> distances){
-		d("SSSP:");
-		int curr = SINK;
-		while( curr != SOURCE){
-			d(curr+"("+distances.get(curr).first+") ");
-			curr = distances.get(curr).second;
-		}
-		d(SOURCE+"("+distances.get(curr).first+") ");
-	}
 	
 	private static void buildDigraph(){
 		
@@ -134,55 +118,35 @@ public class Assignment2 {
 			if(l.weight>=phi[l.destination]) digraph.get(SOURCE).add(new Link(l.destination,excess.get(U)-(l.weight-phi[l.destination])));
 		digraph.get(SOURCE).add(new Link(SINK,excess.get(U)));
 	}
+	private static HashMap<Integer,Integer> dist = new HashMap<Integer,Integer>();//node to dist
+	private static HashMap<Integer,Integer> parents = new HashMap<Integer,Integer>();//node to parent
 	
-	private static Map<Integer, Pair<Integer,Integer>> SSSP(Integer start){
-		
-		Map<Integer, Pair<Integer,Integer>> X = new HashMap<Integer,  Pair<Integer,Integer>>();
-		Map<Integer, Pair<Integer,Integer>> Y = new HashMap<Integer,  Pair<Integer,Integer>>();
-		X.put(start, new Pair<Integer, Integer>(0, Integer.MIN_VALUE));
-		
-		for( int u : digraph.keySet()){	
-			if (u != start){
-				Y.put(u,new Pair<Integer, Integer>(Integer.MAX_VALUE, Integer.MIN_VALUE));
+	private static void djikstra(){
+		PriorityQueue<Pair<Integer,Integer>> q = new PriorityQueue<Pair<Integer,Integer>>(matching.length+2,new Comparator<Pair<Integer,Integer>>(){
+			public int compare(Pair<Integer, Integer> o1, Pair<Integer, Integer> o2){return o1.second-o2.second;}});
+		dist.clear();
+		parents.clear();
+		q.add(new Pair<Integer,Integer>(SOURCE,0));
+		dist.put(U,0);
+		parents.put(U,null);
+		Pair<Integer,Integer> cur;//first = node, second = weight
+		while(!q.isEmpty()){
+			cur = q.poll();
+			for(Link l:digraph.get(cur.first)){
+				Pair<Integer,Integer> n = new Pair<Integer,Integer>(l.destination,cur.second+l.weight);
+				if(!dist.containsKey(n.first)){
+					q.add(n);
+					dist.put(n.first,n.second);
+					parents.put(n.first, cur.first);
+				}
+				else if(n.second<dist.get(n.first)){
+					q.remove(n);
+					q.add(n);
+					dist.put(n.first,n.second);
+					parents.put(n.first, cur.first);
+				}
 			}
 		}
-		
-		while(! Y.isEmpty()){
-			int min = Integer.MAX_VALUE;
-			int argmin = Integer.MIN_VALUE;
-			for( int y : Y.keySet()){
-				for( int x : X.keySet()){
-					for( Link l : digraph.get(x)){
-						if(l.destination == y && (X.get(x).first + l.weight) <  Y.get(y).first){
-							Y.put(y, new Pair<Integer, Integer>((X.get(x).first + l.weight), x));
-						}
-					}
-				}
-			}
-			for (int i : Y.keySet()){
-				if( Y.get(i).first <= min ){
-					min = Y.get(i).first;
-					argmin = i;
-				}
-				
-			}
-			if(argmin != Integer.MIN_VALUE){
-				X.put(argmin, Y.get(argmin) );
-				Y.remove(argmin);
-				d("moving " + argmin + " with d value = " + min + " to X");
-				d("The set X: ");
-				for (int x : X.keySet()){
-					d(x+"");
-				}
-				d("The set Y: ");
-				for (int y : Y.keySet()){
-					d(y+"");
-				}
-			}
-			
-		}
-		
-		return X;
 	}
 	
 	
@@ -194,82 +158,32 @@ public class Assignment2 {
 		return true;
 	}
 	
-	private static void changePhi(Map<Integer, Pair<Integer,Integer>> distances){
+	private static void changePhi(){
 		d("Fix Phi");
-		int d = distances.get(SINK).first; //this is the distance of shortest path from source to sink
+		int d = dist.get(SINK); //this is the distance of shortest path from source to sink
 		for (int i = 0;i<phi.length; ++i){
-			int dSubI = distances.get(i).first;
-			dSubI = Math.max(0, (d - dSubI));
-			phi[i]+=dSubI;
+			if(dist.containsKey(i))
+				phi[i]+=Math.max(0, (d - dist.get(i)));
 		}
 	}
-	
-	private static void updateMatching(Map<Integer, Pair<Integer,Integer>> distances){
-		int child = distances.get(SINK).second, parent;
+	private static void updateMatching(){
+		d("Update Matching");
+		int child = parents.get(SINK), parent;
 		if(child != SOURCE){
-			parent = distances.get(child).second;
+			parent = parents.get(child);
 			while(parent != SOURCE){
+				d(parent+" to "+child);
 				matching[child] = matching[parent];
 				child = parent;
-				parent = distances.get(child).second;
+				parent = parents.get(child);
 			}
 			matching[child] = U;
-			
 		}
 		
 	}
 	
 	private static void addEdge(int source, int dest, int weight){ graph.get(source).add(new Link(dest, weight)); }
-	
-	private static void invertPath(List<Integer> l){ 
-		d("Invert Path: "+l);
-		for(ListIterator<Integer> li = l.listIterator(l.size()); li.hasPrevious();){
-			int v = li.previous();
-			if(!li.hasPrevious()) break;
-			int u = li.previous();
-			matching[u] = v;
-			//System.err.print("matching: [");
-			//for (int i = 0; i < matching.length; i++){
-				//System.err.print(matching[i] + ", ");
-			//}
-			//System.err.print("]\n");
-		}
-	}
-	
-
-	
-/*	private static Pair<Boolean, List<Integer>> DFS(int start){
-		Pair<Boolean,List<Integer>> p = DFSTight(start, new ArrayList<Integer>(), new boolean[graph.size()][matching.length]); //Do depth first search
-		p.second.add(start);
-		return p;
-	}
-	
-	private static Pair<Boolean,List<Integer>> DFSTight(int start, List<Integer> path, boolean[][] visited){
-		d("DFSTighting from u"+start);
-		for(Link l : graph.get(start)) 
-			if (l.tight && !visited[start][l.destination] && !visited[matching[l.destination]][l.destination] ){
-				vVisited.add(l.destination);
-				visited[start][l.destination] = visited[matching[l.destination]][l.destination] = true;
-				d("Explore from u"+start+" to v"+l.destination+" to u"+matching[l.destination]);
-				if(excess.get(matching[l.destination]) == 0){
-					d("Add u' = "+matching[l.destination]+" and v"+l.destination);
-					path.add(matching[l.destination]);
-					path.add(l.destination);
-					return new Pair<Boolean, List<Integer>>(true,path);
-				}
-				
-				Pair<Boolean,List<Integer>> p = DFSTight(matching[l.destination],path, visited);
-				if(p.first){
-					d("Add u"+matching[l.destination]+" and v"+l.destination+" to path");
-					p.second.add(matching[l.destination]);
-					p.second.add(l.destination);
-					return p;
-				}
-			}
-		d("DFSTight has no nodes to visit");
-		return new Pair<Boolean, List<Integer>>(new Boolean(false),path);
-	}*/
-	
+		
 	private static void ensureExcessSize(){
 		while(excess.size()<graph.size()) excess.add(0);
 	}
@@ -285,11 +199,6 @@ public class Assignment2 {
 		for(int i = 0;i<matching.length;++i)
 			if(matching[i]==n) return i;
 		return -1;
-	}
-	
-	private static void handleSource(int n){
-		if(! graph.containsKey(n))
-			 graph.put(n, new ArrayList<Link>());
 	}
 	
 	private static void init(int n){
@@ -323,6 +232,7 @@ public class Assignment2 {
 		public boolean tight;
 		public Link(int d, int w){ destination = d; weight = w; tight=false;}
 		public String toString(){return ""+destination+"("+weight+")";	}
+		public boolean equals(Object o){ if(o instanceof Link) return destination == ((Link)o).destination; return false;}
 	}
 	
 	static class Pair<T,E>{
